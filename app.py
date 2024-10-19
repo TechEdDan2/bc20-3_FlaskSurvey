@@ -12,6 +12,8 @@ debug = DebugToolbarExtension(app)
 
 # Tracks responses
 RESPONSES = []
+# Create a Key for the Session "Dictionary" Key
+RESPONSES_KEY = "resp"
 
 # "Homepage"
 @app.route('/')
@@ -30,6 +32,9 @@ def show_thank_you():
 def start_survey():
     """ Clear any responses """
     RESPONSES = []
+
+    session[RESPONSES_KEY] = []
+
     print(f"This is the LIST Length {len(RESPONSES)}")
 
     return redirect('/questions/0')
@@ -38,15 +43,16 @@ def start_survey():
 @app.route('/questions/<int:q_num>')
 def show_question(q_num):
     """ Display the Question Based on Number """
+    user_responses = session.get(RESPONSES_KEY)
     
-    if (RESPONSES is None):
+    if (user_responses is None):
         # trying to access question page too soon
         return redirect("/")
 
-    if(len(RESPONSES) == len(survey.questions)):
+    if(len(user_responses) == len(survey.questions)):
         return redirect('/thank_you')
     
-    if (len(RESPONSES) != q_num):
+    if (len(user_responses) != q_num):
         # Trying to access questions out of order.
         flash(f"Invalid question id: {q_num}.")
         return redirect(f"/questions/{len(RESPONSES)}")
@@ -61,16 +67,25 @@ def handle_response():
 
     # Get user submission
     choice = request.form['answer']
+
+    # OLD VERSION
     RESPONSES.append(choice)
     print(len(RESPONSES))
 
-    if(len(RESPONSES) == len(survey.questions)):
+    # Using a session 
+    user_responses = session[RESPONSES_KEY]
+    user_responses.append(choice)
+    session[RESPONSES_KEY] = user_responses
+
+    print(session['resp'])
+
+    if(len(user_responses) == len(survey.questions)):
         # Survey complete
         RESPONSES.clear()
         return redirect('/thank_you')
 
     else:
-        return redirect(f'/questions/{len(RESPONSES)}')
+        return redirect(f'/questions/{len(user_responses)}')
 
 
 
